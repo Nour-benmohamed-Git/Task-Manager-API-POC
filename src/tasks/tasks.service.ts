@@ -1,40 +1,40 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Task, TaskStatus } from './task.model';
-import { v4 as uuid } from 'uuid';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Task, TaskStatus } from './task.entity';
+import { CreateTaskDto } from './dto/create-task.dto';
 
 @Injectable()
 export class TasksService {
-  private tasks: Task[] = []; 
+  constructor(
+    @InjectRepository(Task)
+    private taskRepository: Repository<Task>,
+  ) {}
 
-  getAll(): Task[] {
-    return this.tasks;
+  async getAll(): Promise<Task[]> {
+    return this.taskRepository.find();
   }
 
-  getById(id: string): Task {
-    const task = this.tasks.find((t) => t.id === id);
+  async getById(id: string): Promise<Task> {
+    const task = await this.taskRepository.findOne({ where: { id } });
     if (!task) throw new NotFoundException(`Task ${id} not found`);
     return task;
   }
 
-  create(title: string, description: string): Task {
-    const task: Task = {
-      id: uuid(),
-      title,
-      description,
-      status: TaskStatus.OPEN,
-    };
-    this.tasks.push(task);
-    return task;
+  async create(createTaskDto: CreateTaskDto): Promise<Task> {
+    const { title, description } = createTaskDto;
+    const task = this.taskRepository.create({ title, description, status: TaskStatus.OPEN });
+    return this.taskRepository.save(task);
   }
 
-  updateStatus(id: string, status: TaskStatus): Task {
-    const task = this.getById(id);
+  async updateStatus(id: string, status: TaskStatus): Promise<Task> {
+    const task = await this.getById(id);
     task.status = status;
-    return task;
+    return this.taskRepository.save(task);
   }
 
-  delete(id: string): void {
-    this.getById(id); // throws if not found
-    this.tasks = this.tasks.filter((t) => t.id !== id);
+  async delete(id: string): Promise<void> {
+    const result = await this.taskRepository.delete(id);
+    if (result.affected === 0) throw new NotFoundException(`Task ${id} not found`);
   }
 }
