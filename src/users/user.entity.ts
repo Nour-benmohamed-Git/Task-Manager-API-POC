@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Task } from 'src/tasks/task.entity';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class User {
@@ -10,4 +11,9 @@ export class User {
 
   @Column()
   password: string; // will be hashed, never plain text
+
+  // One user owns many tasks.
+  // eager: false = tasks are NOT auto-loaded with every user query.
+  @OneToMany(() => Task, (task) => task.user, { eager: false })
+  tasks: Task[];
 }

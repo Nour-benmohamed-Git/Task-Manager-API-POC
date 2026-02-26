@@ -1,36 +1,42 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskStatusDto } from './dto/update-task-status.dto';
-import { TasksService } from './tasks.service';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import { User } from '../users/user.entity';
 
 @Controller('tasks')
-@UseGuards(AuthGuard('jwt')) // 👈 protects ALL routes in this controller
+@UseGuards(AuthGuard('jwt'))
 export class TasksController {
-  constructor(private tasksService: TasksService) { }
+  constructor(private tasksService: TasksService) {}
 
   @Get()
-  getAll() {
-    return this.tasksService.getAll();
+  getAll(@GetUser() user: User) {
+    return this.tasksService.getAll(user);
   }
 
   @Get(':id')
-  getById(@Param('id') id: string) {
-    return this.tasksService.getById(id);
+  getById(@Param('id') id: string, @GetUser() user: User) {
+    return this.tasksService.getById(id, user);
   }
 
   @Post()
-  create(@Body() createTaskDto: CreateTaskDto) {
-    return this.tasksService.create(createTaskDto);
+  create(@Body() createTaskDto: CreateTaskDto, @GetUser() user: User) {
+    return this.tasksService.create(createTaskDto, user);
   }
 
   @Patch(':id/status')
-  updateStatus(@Param('id') id: string, @Body() dto: UpdateTaskStatusDto) {
-    return this.tasksService.updateStatus(id, dto.status);
+  updateStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateTaskStatusDto,
+    @GetUser() user: User,
+  ) {
+    return this.tasksService.updateStatus(id, dto.status, user);
   }
 
   @Delete(':id')
-  delete(@Param('id') id: string) {
-    return this.tasksService.delete(id);
+  delete(@Param('id') id: string, @GetUser() user: User) {
+    return this.tasksService.delete(id, user);
   }
 }
