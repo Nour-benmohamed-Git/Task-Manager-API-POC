@@ -3,14 +3,13 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // 1. Exception filter — catches all errors, formats them consistently
+  // Global filters, pipes, interceptors
   app.useGlobalFilters(new AllExceptionsFilter());
-
-  // 2. Validation pipe — validates & transforms incoming request data
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -18,9 +17,21 @@ async function bootstrap() {
       transform: true,
     }),
   );
-
-  // 3. Interceptor — wraps all successful responses in a unified shape
   app.useGlobalInterceptors(new TransformInterceptor());
+
+  // ─── Swagger Setup ──────────────────────────────────────────────────────────
+  const config = new DocumentBuilder()
+    .setTitle('Task Manager API')
+    .setDescription('NestJS + PostgreSQL POC')
+    .setVersion('1.0')
+    .addBearerAuth() // adds the Authorization header input in the UI
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+
+  // Mounts the Swagger UI at /api
+  SwaggerModule.setup('api', app, document);
+  // ────────────────────────────────────────────────────────────────────────────
 
   await app.listen(3000);
 }
